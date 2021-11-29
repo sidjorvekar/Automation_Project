@@ -19,7 +19,7 @@ install_apache2 () {
 start_apache2_server () {
 	if systemctl is-active apache2
 	then
-		echo "Apache2 server is already running";
+				echo "Apache2 server is already running";
 	else
 		echo "Apache2 server is not running, Starting Apache2 server";
 		sudo systemctl start apache2
@@ -54,6 +54,34 @@ copy_tar () {
 	echo "Archive file successfully copied on S3 bucket";
 }
 
+update_inventory () {
+	inventoryFile=/var/www/html/inventory.html
+	logType="httpd-logs"
+	filename=${myname}-httpd-logs-${timestamp}.tar
+	type=${filename##*.}
+	size=$(ls -lh /tmp/${filename}| cut -d " " -f5)
+
+	if ! test -f "$inventoryFile"; then
+		echo "Inventory File is not available, creating a Inventory file";
+		touch ${inventoryFile}
+		echo "<b>Log Type&nbsp;&nbsp;&nbsp;&nbsp;Time Created&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Type&nbsp;&nbsp;Size</b>">${inventoryFile}
+	fi
+		echo "<br>${logType}&nbsp;&nbsp;&nbsp;&nbsp;${timestamp}&nbsp;&nbsp;&nbsp;&nbsp;${type}&nbsp;&nbsp;&nbsp;&nbsp;${size}">>${inventoryFile}
+		echo "Inventory file has been updated";
+
+}
+
+create_cronJob () {
+	cronFile=/etc/cron.d/automation
+	if test -f "$cronFile"; then
+		echo "Cron Job file is already available";
+	else
+		echo "Cron Job is not available, creating a Cron job file";
+		touch ${cronFile}
+		echo '0 0 * * * root /root/Automation_Project/automation.sh'>${cronFile}
+		echo "Cron Job file has been created";
+	fi
+}
 
 program_flow () {
 echo "###########Apache instlltion on EC2 & archieving logs script starting###########";
@@ -63,6 +91,8 @@ start_apache2_server;
 enable_apache2_service;
 create_archive_tar;
 copy_tar;
+update_inventory;
+create_cronJob;
 
 echo "###########Apache instlltion on EC2 & archieving logs script completed###########";
 }
